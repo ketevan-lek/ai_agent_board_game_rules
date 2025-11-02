@@ -2,7 +2,7 @@ import requests
 from dotenv import load_dotenv
 import os
 from pathlib import Path
-
+import pdfplumber
 
 load_dotenv()
 
@@ -46,6 +46,12 @@ def save_pdf(url, search_term, save_dir="pdfs"):
             r.raise_for_status()
             with open(filename, "wb") as f:
                 f.write(r.content)
-            print(f"Downloaded {filename}")
+            return extract_text_from_pdf(filename)
+            # print(f"Downloaded {filename}")
         except Exception as e:
             print(f"Failed: {url} ({e})")
+
+
+def extract_text_from_pdf(pdf_path):
+    with pdfplumber.open(pdf_path) as pdf:
+        return "".join(page.extract_text() or "" for page in pdf.pages).replace("\n", " ")
