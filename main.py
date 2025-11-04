@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 import pdfplumber
 from web_crawler import query_google
 from prompts import get_rules_evaluation_message
+from pdf_to_db import process_and_insert_pdf
 load_env = load_dotenv()
 
 llm = init_chat_model("gpt-4o-mini")
@@ -71,7 +72,10 @@ def run_chatbot():
         print(f"\nFinal Answer:\n{llm_evaluation}\n")
 
     if llm_evaluation.split(" — ")[0] == "MATCH":
-        pass
+        pdf_paths = [f"pdfs/{final_state.get('game_name')}"]
+        process_and_insert_pdf(pdf_paths)
+
+        # pass
         # here do stuff. Chunk the pdf text and add it to db
 
     print("-" * 80)

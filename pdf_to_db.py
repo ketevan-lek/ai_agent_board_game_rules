@@ -1,20 +1,9 @@
-"""
-pip install psycopg[binary] pypdf sentence-transformers
-
-Usage:
-  python ingest_pdfs.py ./docs/file1.pdf ./docs/file2.pdf
-  # or: python ingest_pdfs.py ./docs/*.pdf
-
-Make sure pgvector is installed on your DB:
-  CREATE EXTENSION IF NOT EXISTS vector;
-"""
-
 import os
-import sys
+
 import uuid
 import hashlib
 import re
-from typing import List, Tuple
+from typing import List
 import psycopg
 from sentence_transformers import SentenceTransformer
 import pdfplumber
@@ -22,16 +11,12 @@ from dotenv import load_dotenv
 
 load_env = load_dotenv()
 
-# ---------- CONFIG ----------
-# connection_string = "postgresql://{user}:{password}@{host}:{port}/{db_name}"
+
 PG_DSN = os.getenv("DB_DSN", "")
 EMBED_MODEL = os.getenv(
     "EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")  # 384 dims
 CHUNK_MAX_WORDS = int(os.getenv("CHUNK_MAX_WORDS", "220"))
 CHUNK_OVERLAP_WORDS = int(os.getenv("CHUNK_OVERLAP_WORDS", "60"))
-# ---------------------------
-
-# Fast SHA1 of full text for idempotency/versioning
 
 
 def sha1(text: str) -> str:
@@ -52,6 +37,7 @@ def read_pdf(pdf_path: str):
 
 
 def to_paragraphs(page_text: str) -> List[str]:
+    # Review here. Probably a bug. Check pdf reader.
     paras = [re.sub(r"\s+", " ", p).strip()
              for p in re.split(r"\n\s*\n", page_text)]
     return [p for p in paras if len(p.split()) > 5]
@@ -108,7 +94,7 @@ ON CONFLICT (chunk_id) DO NOTHING
 """
 
 
-def main(paths: List[str]):
+def process_and_insert_pdf(paths: List[str]):
     if not paths:
         print("No input PDFs provided.")
         return
