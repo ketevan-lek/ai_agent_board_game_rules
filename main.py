@@ -61,7 +61,7 @@ def run_chatbot():
     #     if user_input.lower() == "exit":
     #         print("Bye")
     #         break
-    state = {"game_name": "catan",
+    state = {"game_name": "Wingspan",
              "pdf_text": None,
              "boardgame_evaluation": None}
 
