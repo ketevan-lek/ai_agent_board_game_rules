@@ -41,32 +41,36 @@ Your task:
 Keep responses short, structured, and clear for easy reference during gameplay"""
 
     @staticmethod
-    def board_game_prompt_user(input: str) -> str:
+    def board_game_prompt_user() -> str:
         """User prompt for analyzing Google search results."""
-        return f""""User asks about board game rules: {input}"""
+        return """User asks about board game rules: {input}"""
 
 
-def create_chat_prompts(system_prompt: str, user_prompt: str):
-    return ChatPromptTemplate.from_messages([("system", system_prompt),
-                                             (MessagesPlaceholder(
-                                                 "chat_history")),
-                                             ("human", user_prompt)])
+def create_chat_prompts(system_prompt: str, user_prompt: str, add_context: bool = False):
+    messages = [("system", system_prompt)]
+
+    if add_context:
+        messages.append(("system", "Context: {context}"))
+
+    messages.append(MessagesPlaceholder("chat_history"))
+    messages.append(("human", user_prompt))
+
+    return ChatPromptTemplate.from_messages(messages)
 
 
 # Convenience functions for creating complete message arrays
-def get_history_aware_message(
-        input: str):
+def get_history_aware_message():
     """Get messages for Google results analysis."""
     return create_chat_prompts(
         PromptTemplates.history_aware_sys_prompt(),
-        PromptTemplates.board_game_prompt_user(input),
+        PromptTemplates.board_game_prompt_user(),
     )
 
 
-def get_qa_message(
-        input: str):
+def get_qa_message(add_context=True):
     """Get messages for Google results analysis."""
     return create_chat_prompts(
         PromptTemplates.answer_sys_prompt(),
-        PromptTemplates.board_game_prompt_user(input),
+        PromptTemplates.board_game_prompt_user(),
+        add_context=add_context
     )
