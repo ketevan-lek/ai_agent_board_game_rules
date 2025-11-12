@@ -61,7 +61,7 @@ def run_chatbot():
     #     if user_input.lower() == "exit":
     #         print("Bye")
     #         break
-    state = {"game_name": "Wingspan",
+    state = {"game_name": "Terraforming Mars",
              "pdf_text": None,
              "boardgame_evaluation": None}
 
@@ -74,9 +74,9 @@ def run_chatbot():
         # print(f"\nFinal Answer:\n{llm_evaluation}\n")
 
     if structured_output.rules:
-        pdf_paths = [f"pdfs/{final_state.get('game_name')}"]
+        pdf_paths = [f"pdfs/{final_state.get('game_name')}.pdf"]
 
-        # process_and_insert_pdf(pdf_paths)
+        process_and_insert_pdf(pdf_paths)
 
         # pass
         # here do stuff. Chunk the pdf text and add it to db

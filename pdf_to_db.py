@@ -65,13 +65,14 @@ def chunk_words(paras: List[str], max_words=220, overlap=60) -> List[str]:
 DDL = """
 CREATE TABLE IF NOT EXISTS documents(
   doc_id TEXT PRIMARY KEY,
-  doc_title TEXT,
+  doc_name TEXT,
   content_sha1 TEXT UNIQUE,
   pages INT
 );
 CREATE TABLE IF NOT EXISTS chunks(
   chunk_id TEXT PRIMARY KEY,
   doc_id TEXT REFERENCES documents(doc_id) ON DELETE CASCADE,
+  doc_name TEXT,
   chunk_index INT,
   text TEXT,
   embedding vector(384),
@@ -82,14 +83,14 @@ CREATE TABLE IF NOT EXISTS chunks(
 """
 
 UPSERT_DOC = """
-INSERT INTO documents (doc_id, doc_title, content_sha1, pages)
+INSERT INTO documents (doc_id, doc_name, content_sha1, pages)
 VALUES (%s,%s,%s,%s)
 ON CONFLICT (doc_id) DO NOTHING
 """
 
 UPSERT_CHUNK = """
-INSERT INTO chunks (chunk_id, doc_id, chunk_index, text, embedding, word_count, page_start, page_end)
-VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+INSERT INTO chunks (chunk_id, doc_id,doc_name, chunk_index, text, embedding, word_count, page_start, page_end)
+VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
 ON CONFLICT (chunk_id) DO NOTHING
 """
 
@@ -123,6 +124,7 @@ def process_and_insert_pdf(paths: List[str]):
                     chunk_rows.append({
                         "chunk_id": str(uuid.uuid4()),
                         "doc_id": doc_id,
+                        "doc_name": title,
                         "chunk_index": idx,
                         "text": chunk,
                         "word_count": len(chunk.split()),
@@ -151,6 +153,7 @@ def process_and_insert_pdf(paths: List[str]):
                         (
                             r["chunk_id"],
                             r["doc_id"],
+                            r['doc_name'],
                             r["chunk_index"],
                             r["text"],
                             r["embedding"],
