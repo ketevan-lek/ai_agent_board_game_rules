@@ -1,13 +1,16 @@
 import os
-
+from pathlib import Path
 import uuid
 import hashlib
 import re
 from typing import List
 import psycopg
 from sentence_transformers import SentenceTransformer
+from langchain_community.document_loaders import PDFPlumberLoader
 import pdfplumber
 from dotenv import load_dotenv
+from langchain_community.vectorstores import PGVector
+from langchain_text_splitter import RecursiveCharacterTextSplitter
 
 load_env = load_dotenv()
 
@@ -19,150 +22,32 @@ CHUNK_MAX_WORDS = int(os.getenv("CHUNK_MAX_WORDS", "220"))
 CHUNK_OVERLAP_WORDS = int(os.getenv("CHUNK_OVERLAP_WORDS", "60"))
 
 
-def sha1(text: str) -> str:
-    return hashlib.sha1(text.encode("utf-8", "ignore")).hexdigest()
-
-
-def read_pdf(pdf_path: str):
-    pages = []
-    full_text = ""
-    with pdfplumber.open(pdf_path) as pdf:
-
-        for page_n, page in enumerate(pdf.pages):
-            page_text = page.extract_text().replace("\n", " ")
-            pages.append((page_n + 1, page_text))
-            full_text += page_text
-
-        return full_text, pages
-
-
-def to_paragraphs(page_text: str) -> List[str]:
-    # Review here. Probably a bug. Check pdf reader.
-    paras = [re.sub(r"\s+", " ", p).strip()
-             for p in re.split(r"\n\s*\n", page_text)]
-    return [p for p in paras if len(p.split()) > 5]
-
-
-def chunk_words(paras: List[str], max_words=220, overlap=60) -> List[str]:
-    chunks, buf = [], []
-    wcount = 0
-    for para in paras:
-        words = para.split()
-        if wcount + len(words) > max_words and buf:
-            chunk = " ".join(buf)
-            chunks.append(chunk)
-            # overlap tail
-            tail = " ".join(chunk.split()[-overlap:]) if overlap else ""
-            buf = [tail] if tail else []
-            wcount = len(tail.split()) if tail else 0
-        buf.append(para)
-        wcount += len(words)
-    if buf:
-        chunks.append(" ".join(buf))
-    return chunks
-
-
-DDL = """
-CREATE TABLE IF NOT EXISTS documents(
-  doc_id TEXT PRIMARY KEY,
-  doc_name TEXT,
-  content_sha1 TEXT UNIQUE,
-  pages INT
-);
-CREATE TABLE IF NOT EXISTS chunks(
-  chunk_id TEXT PRIMARY KEY,
-  doc_id TEXT REFERENCES documents(doc_id) ON DELETE CASCADE,
-  doc_name TEXT,
-  chunk_index INT,
-  text TEXT,
-  embedding vector(384),
-  word_count INT,
-  page_start INT,
-  page_end INT
-);
-"""
-
-UPSERT_DOC = """
-INSERT INTO documents (doc_id, doc_name, content_sha1, pages)
-VALUES (%s,%s,%s,%s)
-ON CONFLICT (doc_id) DO NOTHING
-"""
-
-UPSERT_CHUNK = """
-INSERT INTO chunks (chunk_id, doc_id,doc_name, chunk_index, text, embedding, word_count, page_start, page_end)
-VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-ON CONFLICT (chunk_id) DO NOTHING
-"""
-
-
 def process_and_insert_pdf(paths: List[str]):
-    if not paths:
-        print("No input PDFs provided.")
-        return
-    model = SentenceTransformer(EMBED_MODEL)
-    with psycopg.connect(PG_DSN, autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute(DDL)
+    for pdf_path in paths:
+        doc_name = Path(pdf_path).name
 
-        for path in paths:
-            title = os.path.splitext(os.path.basename(path))[0]
-            full, pages = read_pdf(path)
-            content_id = sha1(full)
-            doc_id = content_id
+        loader = PDFPlumberLoader(pdf_path)
+        pages = loader.load()
 
-            with conn.cursor() as cur:
-                cur.execute(UPSERT_DOC, (doc_id, title,
-                            content_id, len(pages)))
+        for d in pages:
+            d.metadata = {
+                **(d.metadata or {}),
+                "document_name": doc_name,
+                "source": doc_name,
+                "page": d.metadata.get("page", None)
+            }
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000, chunk_overlap=150)
+    chunks = splitter.split_documents(pages)
 
-            # Build page-aware chunks
-            chunk_rows = []
-            idx = 0
-            for page_no, page_text in pages:
-                paras = to_paragraphs(page_text)
-                for chunk in chunk_words(paras, CHUNK_MAX_WORDS, CHUNK_OVERLAP_WORDS):
-                    idx += 1
-                    chunk_rows.append({
-                        "chunk_id": str(uuid.uuid4()),
-                        "doc_id": doc_id,
-                        "doc_name": title,
-                        "chunk_index": idx,
-                        "text": chunk,
-                        "word_count": len(chunk.split()),
-                        "page_start": page_no,
-                        "page_end": page_no
-                    })
+    embeddings = SentenceTransformer(EMBED_MODEL)
 
-            if not chunk_rows:
-                print(f"[warn] No text extracted from {path}")
-                continue
-
-            # Embed in batches
-            B = 128
-            texts = [r["text"] for r in chunk_rows]
-            for i in range(0, len(texts), B):
-                sub = texts[i:i+B]
-                vecs = model.encode(sub, normalize_embeddings=True)
-                for r, v in zip(chunk_rows[i:i+B], vecs):
-                    r["embedding"] = list(map(float, v))
-
-            # Upsert
-            with conn.cursor() as cur:
-                for r in chunk_rows:
-                    cur.execute(
-                        UPSERT_CHUNK,
-                        (
-                            r["chunk_id"],
-                            r["doc_id"],
-                            r['doc_name'],
-                            r["chunk_index"],
-                            r["text"],
-                            r["embedding"],
-                            r["word_count"],
-                            r["page_start"],
-                            r["page_end"],
-                        ),
-                    )
-            print(f"[ok] Ingested {title}: {len(chunk_rows)} chunks")
+    vs = PGVector.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        collection_name="chunks",
+        connection_string=PG_DSN,
+    )
 
 
 if __name__ == "__main__":
