@@ -10,7 +10,7 @@ from langchain_community.document_loaders import PDFPlumberLoader
 import pdfplumber
 from dotenv import load_dotenv
 from langchain_community.vectorstores import PGVector
-from langchain_text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 load_env = load_dotenv()
 
@@ -24,7 +24,7 @@ CHUNK_OVERLAP_WORDS = int(os.getenv("CHUNK_OVERLAP_WORDS", "60"))
 
 def process_and_insert_pdf(paths: List[str]):
     for pdf_path in paths:
-        doc_name = Path(pdf_path).name
+        doc_name = Path(pdf_path).stem
 
         loader = PDFPlumberLoader(pdf_path)
         pages = loader.load()
@@ -51,5 +51,6 @@ def process_and_insert_pdf(paths: List[str]):
 
 
 if __name__ == "__main__":
-    paths = ["pdfs/catan.pdf"]
-    main(paths)
+    paths = ["pdfs/Terraforming Mars.pdf"]
+    process_and_insert_pdf(paths)
+    # main(paths)
