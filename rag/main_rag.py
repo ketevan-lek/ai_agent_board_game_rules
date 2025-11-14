@@ -18,7 +18,7 @@ if __name__ == "__main__":
     history_aware_retriever = create_history_aware_retriever(
         llm, retriever, context_q_prompt)
     document_prompt = PromptTemplate.from_template(
-        "From {doc_name}: \n{page_content}"
+        "From {source}: \n{page_content}"
     )
 
     # 4) Build the chain that stuffs docs (rendered with doc_name) into {context}

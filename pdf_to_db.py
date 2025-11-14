@@ -46,6 +46,7 @@ def process_and_insert_pdf(paths: List[str]):
         embedding=embeddings,
         collection_name="chunks",
         connection_string=PG_DSN,
+        use_jsonb=True,
     )
 
 
