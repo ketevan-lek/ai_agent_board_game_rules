@@ -10,24 +10,20 @@ if __name__ == "__main__":
     llm = init_chat_model("gpt-4o-mini")
     retriever = rf.get_retriver()
 
-    # prompts
     context_q_prompt = get_history_aware_message()
     qa_prompt = get_qa_message(add_context=True)
 
-    # chains
     history_aware_retriever = create_history_aware_retriever(
         llm, retriever, context_q_prompt)
     document_prompt = PromptTemplate.from_template(
         "From {source} (page {page}):\n{page_content}"
     )
 
-    # 4) Build the chain that stuffs docs (rendered with doc_name) into {context}
     question_answer_chain = create_stuff_documents_chain(
         llm,
         qa_prompt,
-        # <-- inject doc_name per document
         document_prompt=document_prompt,
-        document_separator="\n\n---\n\n"              # optional, nicer delimiting
+        document_separator="\n\n---\n\n"
     )
     rag_chain = create_retrieval_chain(
         history_aware_retriever, question_answer_chain)
@@ -45,5 +41,4 @@ if __name__ == "__main__":
         answer = response["answer"]
         print(answer)
 
-        # update chat history
         chat_history = rf.extend_chathistory(chat_history, user_input, answer)
