@@ -17,7 +17,7 @@ def extend_chathistory(chat_history, user_input, llm_answer):
     return chat_history
 
 
-def get_retriver(n_search_kwargs=2):
+def get_retriver(n_search_kwargs=5):
     PG_DSN = os.getenv("DB_DSN")
     EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 
@@ -29,19 +29,6 @@ def get_retriver(n_search_kwargs=2):
         embeddings=embeddings,
         collection_name="chunks"
     )
-
-    # ✅ Directly test the vectorstore
-    docs = vectorstore.similarity_search(
-        "When does a player win in Terraforming Mars?", k=3)
-    print("Docs retrieved:", len(docs))
-    for i, d in enumerate(docs):
-        print(f"DOC {i}:", d.metadata.get("source"),
-              "|", d.page_content[:150], "\n---")
-
-    # ✅ Or, if you have a retriever:
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-    docs = retriever.get_relevant_documents("When does a player win in Catan?")
-    print("Retriever returned:", len(docs))
 
     # Build retriever for top-k chunk retrieval
     return vectorstore.as_retriever(search_kwargs={"k": n_search_kwargs})

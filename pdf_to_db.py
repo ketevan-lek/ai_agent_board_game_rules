@@ -8,7 +8,7 @@ from typing import List
 
 from langchain_community.document_loaders import PDFPlumberLoader
 from dotenv import load_dotenv
-from langchain_community.vectorstores import PGVector
+from langchain_postgres import PGVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 load_env = load_dotenv()
@@ -45,8 +45,7 @@ def process_and_insert_pdf(paths: List[str]):
         documents=chunks,
         embedding=embeddings,
         collection_name="chunks",
-        connection_string=PG_DSN,
-        use_jsonb=True,
+        connection=PG_DSN
     )
 
 

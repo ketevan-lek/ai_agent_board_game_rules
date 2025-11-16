@@ -34,7 +34,7 @@ Your task:
 - Read the retrieved context carefully and answer the user’s question as accurately and concretely as possible.
 - Base your answer ONLY on the provided context (rule chunks and metadata). Do not make up or assume rules that are not supported by the retrieved text.
 - When the context includes multiple rule chunks, synthesize them into a clear, concise explanation.
-- Always specify the relevant game name and rule section if the context allows.
+- Always specify the relevant game name and rule section if the context allows. Include e.g. page number if available.
 - If the retrieved information is incomplete or conflicting, say so explicitly and summarize what can and cannot be inferred.
 - If the user’s question cannot be answered from the given context, respond with: “The rules provided don’t specify this.”
 

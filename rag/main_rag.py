@@ -1,5 +1,5 @@
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_classic.chains.retrieval import create_retrieval_chain
 from langchain.chat_models import init_chat_model
 from langchain_classic.chains import create_history_aware_retriever
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     history_aware_retriever = create_history_aware_retriever(
         llm, retriever, context_q_prompt)
     document_prompt = PromptTemplate.from_template(
-        "From {source}: \n{page_content}"
+        "From {source} (page {page}):\n{page_content}"
     )
 
     # 4) Build the chain that stuffs docs (rendered with doc_name) into {context}
@@ -43,6 +43,7 @@ if __name__ == "__main__":
         response = rag_chain.invoke(
             {"input": user_input, "chat_history": chat_history})
         answer = response["answer"]
+        print(answer)
 
         # update chat history
         chat_history = rf.extend_chathistory(chat_history, user_input, answer)
