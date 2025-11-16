@@ -3,12 +3,12 @@ from langchain_core.prompts import PromptTemplate
 from langchain_classic.chains.retrieval import create_retrieval_chain
 from langchain.chat_models import init_chat_model
 from langchain_classic.chains import create_history_aware_retriever
-from rag_prompts import get_history_aware_message, get_qa_message
-import rag_functions as rf
+from src.boardgame_agents.rag.prompt_templates_rag import get_history_aware_message, get_qa_message
+from src.boardgame_agents.rag.rag_helpers import get_retriver, extend_chathistory
 
 if __name__ == "__main__":
     llm = init_chat_model("gpt-4o-mini")
-    retriever = rf.get_retriver()
+    retriever = get_retriver()
 
     context_q_prompt = get_history_aware_message()
     qa_prompt = get_qa_message(add_context=True)
@@ -41,4 +41,4 @@ if __name__ == "__main__":
         answer = response["answer"]
         print(answer)
 
-        chat_history = rf.extend_chathistory(chat_history, user_input, answer)
+        chat_history = extend_chathistory(chat_history, user_input, answer)
