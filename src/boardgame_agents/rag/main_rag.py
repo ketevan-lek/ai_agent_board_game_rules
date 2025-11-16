@@ -6,7 +6,10 @@ from langchain_classic.chains import create_history_aware_retriever
 from src.boardgame_agents.rag.prompt_templates_rag import get_history_aware_message, get_qa_message
 from src.boardgame_agents.rag.rag_helpers import get_retriver, extend_chathistory
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
+
+
+def call_rag():
     llm = init_chat_model("gpt-4o-mini")
     retriever = get_retriver()
 
