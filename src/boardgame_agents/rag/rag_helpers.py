@@ -6,6 +6,8 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.prompts import ChatPromptTemplate
 from sentence_transformers import CrossEncoder
+from langchain_core.runnables import Runnable
+
 load_dotenv()
 
 
@@ -17,7 +19,7 @@ def extend_chathistory(chat_history, user_input, llm_answer):
     return chat_history
 
 
-def get_retriever(n_search_kwargs=5):
+def get_retriever(k=5):
     PG_DSN = os.getenv("DB_DSN")
     EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 
@@ -29,10 +31,10 @@ def get_retriever(n_search_kwargs=5):
         collection_name="chunks"
     )
 
-    return vectorstore.as_retriever(search_kwargs={"k": n_search_kwargs})
+    return vectorstore.as_retriever(search_kwargs={"k": k})
 
 
-class Reranker:
+class Reranker(Runnable):
     """Second-stage reranker using a cross-encoder."""
 
     def __init__(self, retriever, model_name="cross-encoder/ms-marco-MiniLM-L-6-v2", top_k=5):
