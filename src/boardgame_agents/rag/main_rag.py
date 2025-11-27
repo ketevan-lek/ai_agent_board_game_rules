@@ -6,8 +6,6 @@ from langchain_classic.chains import create_history_aware_retriever
 from src.boardgame_agents.rag.prompt_templates_rag import get_history_aware_message, get_qa_message
 from src.boardgame_agents.rag.rag_helpers import extend_chathistory, get_reranked_retriever
 
-# if __name__ == "__main__":
-
 
 def call_rag():
     llm = init_chat_model("gpt-4o-mini")
@@ -45,3 +43,7 @@ def call_rag():
         print(answer)
 
         chat_history = extend_chathistory(chat_history, user_input, answer)
+
+
+if __name__ == "__main__":
+    call_rag()
