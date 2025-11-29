@@ -36,7 +36,7 @@ def process_and_insert_pdf(paths: List[str]):
                 "page": d.metadata.get("page", None)
             }
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000, chunk_overlap=150)
+        chunk_size=350, chunk_overlap=150)
     chunks = splitter.split_documents(pages)
 
     embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
