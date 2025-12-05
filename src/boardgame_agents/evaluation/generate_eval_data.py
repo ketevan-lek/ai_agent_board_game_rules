@@ -57,9 +57,9 @@ def load_chunks_from_pg(collection_name: str = "chunks"):
 
 
 def build_ragas_generator():
-    # llm_wrapper = LangchainLLMWrapper(generate_llm())
-    llm_wrapper = llm_factory(model=os.getenv(
-        "LLM_MODEL"), client=generate_llm())
+    llm_wrapper = LangchainLLMWrapper(generate_llm())
+    # llm_wrapper = llm_factory(model=os.getenv(
+    #    "LLM_MODEL"), client=generate_llm())
     emb_wrapper = LangchainEmbeddingsWrapper(
         HuggingFaceEmbeddings(model_name=EMBED_MODEL)
     )
