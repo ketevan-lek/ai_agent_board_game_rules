@@ -14,7 +14,6 @@ load_env = load_dotenv()
 
 # llm = init_chat_model("gpt-4o-mini")
 llm = ChatOpenAI(
-    # any Qwen model name from OpenRouter
     model=os.getenv("LLM_MODEL"),
     openai_api_key=os.getenv('OPENROUTER_API_KEY'),
     openai_api_base="https://openrouter.ai/api/v1",
